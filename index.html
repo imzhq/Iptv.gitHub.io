@@ -134,14 +134,13 @@
 
     .search-box {
       width: 100%;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border-radius: 10px;
       border: 1px solid #334155;
       background: #161e2e;
       color: #fff;
       font-size: 0.9rem;
       display: none;
-      margin-bottom: 4px;
       outline: none;
     }
     .search-box:focus { border-color: var(--accent-color); }
@@ -207,7 +206,7 @@
       <button class="login-btn" onclick="handleLogin()">Connect</button>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="Search shows or channels..." oninput="filterItems()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search shows or channels..." oninput="filterItems()">
     <div class="category-grid" id="categoryView" style="display: none;"></div>
     <div class="item-list" id="itemView" style="display: none;"></div>
   </div>
