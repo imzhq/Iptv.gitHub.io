@@ -93,6 +93,7 @@
       display: none; 
       aspect-ratio: 16 / 9; 
       position: relative;
+      flex-shrink: 0;
     }
     video { width: 100%; height: 100%; display: block; object-fit: contain; }
 
@@ -457,7 +458,6 @@
 
           const epExt = ep.container_extension || 'mp4';
           const epUrl = `${activeAuth.host}/series/${activeAuth.user}/${activeAuth.pass}/${ep.id}.${epExt}`;
-          // Pass `false` as second parameter to treat as a standard downloadable VOD file instead of live HLS
           card.onclick = () => playStream(epUrl, false);
 
           itemView.appendChild(card);
@@ -477,17 +477,13 @@
       }
 
       if (isLive && Hls.isSupported()) {
-        // Live TV uses HLS stream management
         hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
       } else {
-        // Series & Movies bypass HLS completely and use native browser progressive streaming (no buffer stalls)
-        player.removeAttribute('src');
-        player.load();
+        // Safe direct file assignment without wiping or resetting state prematurely
         player.src = url;
-        player.load();
         player.play().catch(e => {
           console.warn('VOD play error:', e);
         });
