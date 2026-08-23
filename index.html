@@ -206,8 +206,7 @@
       <button class="login-btn" onclick="handleLogin()">Connect</button>
     </div>
 
-    <!-- Search bar is now positioned directly at the top of the content stream -->
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search shows, episodes or channels..." oninput="filterItems()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search all shows or channels..." oninput="globalSearch()">
     <div class="category-grid" id="categoryView" style="display: none;"></div>
     <div class="item-list" id="itemView" style="display: none;"></div>
   </div>
@@ -217,10 +216,9 @@
     let currentMode = 'live';
     let navigationStack = [];
     let hlsInstance = null;
-    let currentItemList = [];
 
-    let liveCategories = {}, liveChannels = {};
-    let seriesCategories = {}, seriesList = {};
+    let liveCategories = {}, liveChannels = {}, allLiveFlat = [];
+    let seriesCategories = {}, seriesList = {}, allSeriesFlat = [];
 
     const loginCard = document.getElementById('loginCard');
     const categoryView = document.getElementById('categoryView');
@@ -247,6 +245,7 @@
       loginCard.style.display = 'none';
       topNav.style.display = 'flex';
       loadLiveData();
+      loadSeriesDataInBackground();
     }
 
     async function loadLiveData() {
@@ -261,14 +260,14 @@
         const channels = await chanRes.json();
 
         processData(categories, channels, liveCategories, liveChannels, 'stream_id');
+        allLiveFlat = Array.isArray(channels) ? channels : Object.values(channels || {});
         renderCategories();
       } catch (err) {
         alert("Failed to load Live TV data.");
       }
     }
 
-    async function loadSeriesData() {
-      headerTitle.innerText = "Loading Series...";
+    async function loadSeriesDataInBackground() {
       const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
       const seriesUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series`;
 
@@ -279,9 +278,9 @@
         const series = await seriesRes.json();
 
         processData(categories, series, seriesCategories, seriesList, 'series_id');
-        renderCategories();
+        allSeriesFlat = Array.isArray(series) ? series : Object.values(series || {});
       } catch (err) {
-        alert("Failed to load TV Series data.");
+        console.warn("Background series load failed.");
       }
     }
 
@@ -313,18 +312,39 @@
       currentMode = mode;
       navigationStack = [];
       backBtn.style.display = 'none';
-      searchInput.style.display = 'none';
+      searchInput.style.display = 'block';
       searchInput.value = '';
 
       document.getElementById('navLive').classList.toggle('active', mode === 'live');
       document.getElementById('navSeries').classList.toggle('active', mode === 'series');
 
       if (mode === 'live') {
-        if (!Object.keys(liveCategories).length) loadLiveData();
-        else renderCategories();
+        renderCategories();
       } else {
-        if (!Object.keys(seriesCategories).length) loadSeriesData();
-        else renderCategories();
+        if (!Object.keys(seriesCategories).length) {
+          loadSeriesDataForTab();
+        } else {
+          renderCategories();
+        }
+      }
+    }
+
+    async function loadSeriesDataForTab() {
+      headerTitle.innerText = "Loading Series...";
+      const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
+      const seriesUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series`;
+
+      try {
+        const catRes = await fetch(catUrl);
+        const seriesRes = await fetch(seriesUrl);
+        const categories = await catRes.json();
+        const series = await seriesRes.json();
+
+        processData(categories, series, seriesCategories, seriesList, 'series_id');
+        allSeriesFlat = Array.isArray(series) ? series : Object.values(series || {});
+        renderCategories();
+      } catch (err) {
+        alert("Failed to load TV Series data.");
       }
     }
 
@@ -332,8 +352,9 @@
       categoryView.innerHTML = '';
       categoryView.style.display = 'grid';
       itemView.style.display = 'none';
-      searchInput.style.display = 'none';
-      headerTitle.innerText = currentMode === 'live' ? "Live Categories" : "Series Categories";
+      searchInput.style.display = 'block';
+      searchInput.value = '';
+      headerTitle.innerText = currentMode === 'live' ? "Live TV Categories" : "Series Categories";
 
       const dataGroup = currentMode === 'live' ? liveChannels : seriesList;
 
@@ -347,16 +368,33 @@
       });
     }
 
+    function globalSearch() {
+      const query = searchInput.value.toLowerCase().trim();
+      if (!query) {
+        if (navigationStack.length === 0) {
+          renderCategories();
+        }
+        return;
+      }
+
+      categoryView.style.display = 'none';
+      itemView.style.display = 'flex';
+      headerTitle.innerText = `Search: "${query}"`;
+
+      const sourceArray = currentMode === 'live' ? allLiveFlat : allSeriesFlat;
+      const matched = sourceArray.filter(i => i.name && i.name.toLowerCase().includes(query)).slice(0, 50);
+
+      renderItemList(matched);
+    }
+
     function showCategoryItems(catName) {
       pushNavState(() => renderCategories());
       categoryView.style.display = 'none';
       itemView.style.display = 'flex';
-      searchInput.style.display = 'block';
-      searchInput.value = '';
       headerTitle.innerText = catName;
 
-      currentItemList = (currentMode === 'live' ? liveChannels : seriesList)[catName] || [];
-      renderItemList(currentItemList);
+      const items = (currentMode === 'live' ? liveChannels : seriesList)[catName] || [];
+      renderItemList(items);
     }
 
     function renderItemList(items) {
@@ -383,71 +421,47 @@
       });
     }
 
-    function filterItems() {
-      const query = searchInput.value.toLowerCase();
-      const filtered = currentItemList.filter(item => item.name.toLowerCase().includes(query));
-      renderItemList(filtered);
-    }
-
     async function loadSeriesEpisodes(seriesId, seriesName) {
-      pushNavState(() => showCategoryItems(headerTitle.innerText));
+      pushNavState(() => {
+        itemView.style.display = 'flex';
+        headerTitle.innerText = seriesName;
+      });
       headerTitle.innerText = "Loading Episodes...";
       itemView.innerHTML = '';
-      
+
       const url = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_info&series_id=${seriesId}`;
 
       try {
         const res = await fetch(url);
         const data = await res.json();
-        
-        // Flatten all seasons and episodes into one array so search bar works inside the show too!
-        currentItemList = [];
-        const seasons = data.episodes || {};
-        Object.keys(seasons).forEach(seasonNum => {
-          seasons[seasonNum].forEach(ep => {
-            currentItemList.push({
-              name: `S${seasonNum} E${ep.episode_num} - ${ep.title || 'Episode ' + ep.episode_num}`,
-              id: ep.id,
-              container_extension: ep.container_extension || 'mp4'
-            });
-          });
-        });
-
-        searchInput.style.display = 'block';
-        searchInput.value = '';
-        renderEpisodeList(currentItemList);
-        headerTitle.innerText = seriesName;
+        renderEpisodes(data.episodes || {}, seriesName);
       } catch (err) {
         alert("Failed to fetch episodes.");
       }
     }
 
-    function renderEpisodeList(items) {
+    function renderEpisodes(seasons, seriesName) {
+      headerTitle.innerText = seriesName;
       itemView.innerHTML = '';
-      items.forEach(ep => {
-        const card = document.createElement('div');
-        card.className = 'item-card';
-        card.innerHTML = `
-          <div class="item-info">
-            <div class="item-title">${ep.name}</div>
-            <div class="item-sub">Play Episode</div>
-          </div>
-        `;
-        const epUrl = `${activeAuth.host}/series/${activeAuth.user}/${activeAuth.pass}/${ep.id}.${ep.container_extension}`;
-        card.onclick = () => playStream(epUrl);
-        itemView.appendChild(card);
-      });
-    }
 
-    // Override filter function to support episodes too
-    function filterItems() {
-      const query = searchInput.value.toLowerCase();
-      const filtered = currentItemList.filter(item => item.name.toLowerCase().includes(query));
-      if (currentMode === 'series' && navigationStack.length > 2) {
-        renderEpisodeList(filtered);
-      } else {
-        renderItemList(filtered);
-      }
+      Object.keys(seasons).forEach(seasonNum => {
+        seasons[seasonNum].forEach(ep => {
+          const card = document.createElement('div');
+          card.className = 'item-card';
+          card.innerHTML = `
+            <div class="item-info">
+              <div class="item-title">S${seasonNum} E${ep.episode_num} - ${ep.title || 'Episode ' + ep.episode_num}</div>
+              <div class="item-sub">Play Episode</div>
+            </div>
+          `;
+
+          const epExt = ep.container_extension || 'mp4';
+          const epUrl = `${activeAuth.host}/series/${activeAuth.user}/${activeAuth.pass}/${ep.id}.${epExt}`;
+          card.onclick = () => playStream(epUrl);
+
+          itemView.appendChild(card);
+        });
+      });
     }
 
     function playStream(url) {
@@ -461,14 +475,23 @@
         hlsInstance = null;
       }
 
-      if (Hls.isSupported() && (url.includes('.m3u8') || !player.canPlayType('video/mp4'))) {
+      // Robust stream attachment for Safari/iOS using HLS.js or native fallback
+      if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('/live/') || !player.canPlayType('video/mp4'))) {
         hlsInstance = new Hls({ enableWorker: true });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play());
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
       } else {
         player.src = url;
-        player.play().catch(e => console.warn('Native playback error:', e));
+        player.play().catch(e => {
+          console.warn('Fallback standard play failed:', e);
+          // Auto fallback attempt to m3u8 stream variant
+          if (url.includes('/series/')) {
+            const altUrl = url.replace(/\.[^/.]+$/, "") + ".m3u8";
+            player.src = altUrl;
+            player.play();
+          }
+        });
       }
 
       videoWrapper.scrollIntoView({ behavior: 'smooth' });
@@ -501,7 +524,7 @@
       }
       if (navigationStack.length === 0) {
         backBtn.style.display = 'none';
-        searchInput.style.display = 'none';
+        renderCategories();
       }
     }
   </script>
