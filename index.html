@@ -413,7 +413,7 @@
         `;
 
         if (currentMode === 'live') {
-          card.onclick = () => playStream(`${activeAuth.host}/live/${activeAuth.user}/${activeAuth.pass}/${item.stream_id}.${item.container_extension || 'm3u8'}`);
+          card.onclick = () => playStream(`${activeAuth.host}/live/${activeAuth.user}/${activeAuth.pass}/${item.stream_id}.${item.container_extension || 'm3u8'}`, true);
         } else {
           card.onclick = () => loadSeriesEpisodes(item.series_id, item.name);
         }
@@ -457,14 +457,15 @@
 
           const epExt = ep.container_extension || 'mp4';
           const epUrl = `${activeAuth.host}/series/${activeAuth.user}/${activeAuth.pass}/${ep.id}.${epExt}`;
-          card.onclick = () => playStream(epUrl);
+          // Pass `false` as second parameter to treat as a standard downloadable VOD file instead of live HLS
+          card.onclick = () => playStream(epUrl, false);
 
           itemView.appendChild(card);
         });
       });
     }
 
-    function playStream(url) {
+    function playStream(url, isLive) {
       videoWrapper.style.display = 'block';
       if (document.pictureInPictureEnabled || player.webkitSupportsPresentationMode) {
         pipBtn.style.display = 'block';
@@ -475,22 +476,20 @@
         hlsInstance = null;
       }
 
-      // Robust stream attachment for Safari/iOS using HLS.js or native fallback
-      if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('/live/') || !player.canPlayType('video/mp4'))) {
-        hlsInstance = new Hls({ enableWorker: true });
+      if (isLive && Hls.isSupported()) {
+        // Live TV uses HLS stream management
+        hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
       } else {
+        // Series & Movies bypass HLS completely and use native browser progressive streaming (no buffer stalls)
+        player.removeAttribute('src');
+        player.load();
         player.src = url;
+        player.load();
         player.play().catch(e => {
-          console.warn('Fallback standard play failed:', e);
-          // Auto fallback attempt to m3u8 stream variant
-          if (url.includes('/series/')) {
-            const altUrl = url.replace(/\.[^/.]+$/, "") + ".m3u8";
-            player.src = altUrl;
-            player.play();
-          }
+          console.warn('VOD play error:', e);
         });
       }
 
