@@ -93,7 +93,6 @@
       display: none; 
       aspect-ratio: 16 / 9; 
       position: relative;
-      flex-shrink: 0;
     }
     video { width: 100%; height: 100%; display: block; object-fit: contain; }
 
@@ -414,7 +413,7 @@
         `;
 
         if (currentMode === 'live') {
-          card.onclick = () => playStream(`${activeAuth.host}/live/${activeAuth.user}/${activeAuth.pass}/${item.stream_id}.${item.container_extension || 'm3u8'}`, true);
+          card.onclick = () => playStream(`${activeAuth.host}/live/${activeAuth.user}/${activeAuth.pass}/${item.stream_id}.${item.container_extension || 'm3u8'}`);
         } else {
           card.onclick = () => loadSeriesEpisodes(item.series_id, item.name);
         }
@@ -458,14 +457,14 @@
 
           const epExt = ep.container_extension || 'mp4';
           const epUrl = `${activeAuth.host}/series/${activeAuth.user}/${activeAuth.pass}/${ep.id}.${epExt}`;
-          card.onclick = () => playStream(epUrl, false);
+          card.onclick = () => playStream(epUrl);
 
           itemView.appendChild(card);
         });
       });
     }
 
-    function playStream(url, isLive) {
+    function playStream(url) {
       videoWrapper.style.display = 'block';
       if (document.pictureInPictureEnabled || player.webkitSupportsPresentationMode) {
         pipBtn.style.display = 'block';
@@ -476,16 +475,32 @@
         hlsInstance = null;
       }
 
-      if (isLive && Hls.isSupported()) {
+      if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('/live/') || !player.canPlayType('video/mp4'))) {
         hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
+        
+        // Auto recover from stream stalls/network buffers mid-show
+        hlsInstance.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                hlsInstance.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                hlsInstance.recoverMediaError();
+                break;
+              default:
+                hlsInstance.destroy();
+                break;
+            }
+          }
+        });
       } else {
-        // Safe direct file assignment without wiping or resetting state prematurely
         player.src = url;
         player.play().catch(e => {
-          console.warn('VOD play error:', e);
+          console.warn('Standard play failed:', e);
         });
       }
 
