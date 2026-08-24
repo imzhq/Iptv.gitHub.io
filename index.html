@@ -93,7 +93,7 @@
       display: none; 
       aspect-ratio: 16 / 9; 
       position: relative;
-      flex-shrink: 0; /* Keeps video frame solid and prevents layout squishing */
+      flex-shrink: 0;
     }
     video { width: 100%; height: 100%; display: block; object-fit: contain; }
 
@@ -207,7 +207,7 @@
       <button class="login-btn" onclick="handleLogin()">Connect</button>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search all shows or channels..." oninput="globalSearch()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search shows or channels..." oninput="globalSearch()">
     <div class="category-grid" id="categoryView" style="display: none;"></div>
     <div class="item-list" id="itemView" style="display: none;"></div>
   </div>
@@ -219,7 +219,8 @@
     let hlsInstance = null;
 
     let liveCategories = {}, liveChannels = {}, allLiveFlat = [];
-    let seriesCategories = {}, seriesList = {}, allSeriesFlat = [];
+    let seriesCategories = {}; // Stores category ID -> Name mapping
+    let seriesCache = {};     // Lazy load cache for category content
 
     const loginCard = document.getElementById('loginCard');
     const categoryView = document.getElementById('categoryView');
@@ -246,7 +247,6 @@
       loginCard.style.display = 'none';
       topNav.style.display = 'flex';
       loadLiveData();
-      loadSeriesDataInBackground();
     }
 
     async function loadLiveData() {
@@ -265,23 +265,6 @@
         renderCategories();
       } catch (err) {
         alert("Failed to load Live TV data.");
-      }
-    }
-
-    async function loadSeriesDataInBackground() {
-      const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
-      const seriesUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series`;
-
-      try {
-        const catRes = await fetch(catUrl);
-        const seriesRes = await fetch(seriesUrl);
-        const categories = await catRes.json();
-        const series = await seriesRes.json();
-
-        processData(categories, series, seriesCategories, seriesList, 'series_id');
-        allSeriesFlat = Array.isArray(series) ? series : Object.values(series || {});
-      } catch (err) {
-        console.warn("Background series load failed.");
       }
     }
 
@@ -319,62 +302,110 @@
       document.getElementById('navLive').classList.toggle('active', mode === 'live');
       document.getElementById('navSeries').classList.toggle('active', mode === 'series');
 
-      if (mode === 'live') {
-        renderCategories();
-      } else {
-        if (!Object.keys(seriesCategories).length) {
-          loadSeriesDataForTab();
-        } else {
-          renderCategories();
-        }
-      }
+      renderCategories();
     }
 
-    async function loadSeriesDataForTab() {
-      headerTitle.innerText = "Loading Series...";
-      const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
-      const seriesUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series`;
-
-      try {
-        const catRes = await fetch(catUrl);
-        const seriesRes = await fetch(seriesUrl);
-        const categories = await catRes.json();
-        const series = await seriesRes.json();
-
-        processData(categories, series, seriesCategories, seriesList, 'series_id');
-        allSeriesFlat = Array.isArray(series) ? series : Object.values(series || {});
-        renderCategories();
-      } catch (err) {
-        alert("Failed to load TV Series data.");
-      }
-    }
-
-    function renderCategories() {
+    async function renderCategories() {
       categoryView.innerHTML = '';
       categoryView.style.display = 'grid';
       itemView.style.display = 'none';
       searchInput.style.display = 'block';
       searchInput.value = '';
-      headerTitle.innerText = currentMode === 'live' ? "Live TV Categories" : "Series Categories";
 
-      const dataGroup = currentMode === 'live' ? liveChannels : seriesList;
+      if (currentMode === 'live') {
+        headerTitle.innerText = "Live TV Categories";
+        Object.keys(liveChannels).forEach(catName => {
+          if (!liveChannels[catName].length) return;
+          appendCategoryCard(catName, () => showLiveCategoryItems(catName));
+        });
+      } else {
+        headerTitle.innerText = "Series Categories";
+        if (Object.keys(seriesCategories).length === 0) {
+          await loadSeriesCategories();
+        } else {
+          displaySeriesCategories();
+        }
+      }
+    }
 
-      Object.keys(dataGroup).forEach(catName => {
-        if (!dataGroup[catName].length) return;
-        const card = document.createElement('div');
-        card.className = 'category-card';
-        card.innerText = catName;
-        card.onclick = () => showCategoryItems(catName);
-        categoryView.appendChild(card);
+    async function loadSeriesCategories() {
+      headerTitle.innerText = "Loading Series Categories...";
+      const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
+
+      try {
+        const res = await fetch(catUrl);
+        const categories = await res.json();
+        const catArr = Array.isArray(categories) ? categories : Object.values(categories || {});
+        
+        catArr.forEach(c => {
+          if (c && c.category_id) {
+            seriesCategories[c.category_id] = c.category_name;
+          }
+        });
+        displaySeriesCategories();
+      } catch (err) {
+        alert("Failed to load series categories.");
+      }
+    }
+
+    function displaySeriesCategories() {
+      headerTitle.innerText = "Series Categories";
+      categoryView.innerHTML = '';
+      Object.entries(seriesCategories).forEach(([catId, catName]) => {
+        appendCategoryCard(catName, () => loadSeriesByCategory(catId, catName));
       });
+    }
+
+    function appendCategoryCard(name, onClickFn) {
+      const card = document.createElement('div');
+      card.className = 'category-card';
+      card.innerText = name;
+      card.onclick = onClickFn;
+      categoryView.appendChild(card);
+    }
+
+    async function loadSeriesByCategory(catId, catName) {
+      pushNavState(() => renderCategories());
+      categoryView.style.display = 'none';
+      itemView.style.display = 'flex';
+      
+      if (seriesCache[catId]) {
+        headerTitle.innerText = catName;
+        renderItemList(seriesCache[catId]);
+        return;
+      }
+
+      headerTitle.innerText = `Loading ${catName}...`;
+      itemView.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-sub);">Fetching shows...</div>';
+
+      const url = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series&category_id=${catId}`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : Object.values(data || {});
+        seriesCache[catId] = items;
+        
+        headerTitle.innerText = catName;
+        renderItemList(items);
+      } catch (err) {
+        alert("Failed to load series for this category.");
+        goBack();
+      }
+    }
+
+    function showLiveCategoryItems(catName) {
+      pushNavState(() => renderCategories());
+      categoryView.style.display = 'none';
+      itemView.style.display = 'flex';
+      headerTitle.innerText = catName;
+      renderItemList(liveChannels[catName] || []);
     }
 
     function globalSearch() {
       const query = searchInput.value.toLowerCase().trim();
       if (!query) {
-        if (navigationStack.length === 0) {
-          renderCategories();
-        }
+        if (navigationStack.length === 0) renderCategories();
         return;
       }
 
@@ -382,20 +413,13 @@
       itemView.style.display = 'flex';
       headerTitle.innerText = `Search: "${query}"`;
 
-      const sourceArray = currentMode === 'live' ? allLiveFlat : allSeriesFlat;
-      const matched = sourceArray.filter(i => i.name && i.name.toLowerCase().includes(query)).slice(0, 50);
-
-      renderItemList(matched);
-    }
-
-    function showCategoryItems(catName) {
-      pushNavState(() => renderCategories());
-      categoryView.style.display = 'none';
-      itemView.style.display = 'flex';
-      headerTitle.innerText = catName;
-
-      const items = (currentMode === 'live' ? liveChannels : seriesList)[catName] || [];
-      renderItemList(items);
+      if (currentMode === 'live') {
+        const matched = allLiveFlat.filter(i => i.name && i.name.toLowerCase().includes(query)).slice(0, 50);
+        renderItemList(matched);
+      } else {
+        // Search across cached series categories or give notification
+        itemView.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-sub);">Global search for series requires full payload. Browse by category for fast loading.</div>';
+      }
     }
 
     function renderItemList(items) {
@@ -481,24 +505,7 @@
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
-        
-        hlsInstance.on(Hls.Events.ERROR, (event, data) => {
-          if (data.fatal) {
-            switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR:
-                hlsInstance.startLoad();
-                break;
-              case Hls.ErrorTypes.MEDIA_ERROR:
-                hlsInstance.recoverMediaError();
-                break;
-              default:
-                hlsInstance.destroy();
-                break;
-            }
-          }
-        });
       } else {
-        // Native VOD handling with automatic anti-stall recovery listener
         player.src = url;
         player.load();
         
