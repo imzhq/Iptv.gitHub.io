@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Xtream Web Player</title>
-  <!-- HLS.js Engine for Universal Video Decoding -->
+  <title>M3U Web Player</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
   <style>
     :root {
@@ -31,69 +30,22 @@
     }
     
     .back-btn { 
-      background: none; 
-      border: none; 
-      color: var(--accent-color); 
-      font-size: 0.85rem; 
-      font-weight: 600; 
-      cursor: pointer; 
-      display: none; 
-      white-space: nowrap;
+      background: none; border: none; color: var(--accent-color); 
+      font-size: 0.85rem; font-weight: 600; cursor: pointer; display: none; white-space: nowrap;
     }
 
     .header-title { 
-      font-size: 0.85rem; 
-      font-weight: 700; 
-      color: var(--text-main); 
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
+      font-size: 0.85rem; font-weight: 700; color: var(--text-main); 
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
     }
 
     .pip-btn {
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #fff;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: none;
-    }
-
-    .top-nav {
-      display: flex;
-      background: #1e293b;
-      border-radius: 6px;
-      padding: 2px;
-      gap: 2px;
-    }
-
-    .nav-item {
-      padding: 4px 10px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text-sub);
-      border-radius: 4px;
-      cursor: pointer;
-      text-align: center;
-      transition: all 0.2s ease;
-    }
-
-    .nav-item.active {
-      background: var(--accent-color);
-      color: #fff;
+      background: #1e293b; border: 1px solid #334155; color: #fff;
+      padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: none;
     }
 
     .video-container { 
-      width: 100%; 
-      background: #000; 
-      display: none; 
-      aspect-ratio: 16 / 9; 
-      position: relative;
-      flex-shrink: 0;
+      width: 100%; background: #000; display: none; aspect-ratio: 16 / 9; position: relative; flex-shrink: 0; 
     }
     video { width: 100%; height: 100%; display: block; object-fit: contain; }
 
@@ -110,70 +62,35 @@
     }
     .login-card h3 { font-size: 1rem; text-align: center; color: var(--text-main); margin-bottom: 2px; }
     .input-field {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #161e2e;
-      color: #fff;
-      font-size: 0.85rem;
-      outline: none;
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid #334155; background: #161e2e; color: #fff; font-size: 0.85rem; outline: none;
     }
     .input-field:focus { border-color: var(--accent-color); }
     
     .login-btn {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      background: var(--accent-color);
-      color: #fff;
-      font-weight: bold;
-      font-size: 0.85rem;
-      cursor: pointer;
-      margin-top: 2px;
+      padding: 10px; border-radius: 8px; border: none;
+      background: var(--accent-color); color: #fff; font-weight: bold; font-size: 0.85rem; cursor: pointer;
     }
 
     .search-box {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #161e2e;
-      color: #fff;
-      font-size: 0.85rem;
-      display: none;
-      outline: none;
+      width: 100%; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid #334155; background: #161e2e; color: #fff; font-size: 0.85rem; display: none; outline: none;
     }
     .search-box:focus { border-color: var(--accent-color); }
 
     .category-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .category-card {
-      background: var(--card-bg);
-      padding: 12px 8px;
-      border-radius: var(--border-radius);
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      cursor: pointer;
-      min-height: 60px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--card-bg); padding: 12px 8px; border-radius: var(--border-radius);
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      cursor: pointer; min-height: 60px; border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .category-card:active { background: var(--card-active); }
 
     .item-list { display: flex; flex-direction: column; gap: 6px; }
     .item-card {
-      background: var(--card-bg);
-      padding: 8px 10px;
-      border-radius: var(--border-radius);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      background: var(--card-bg); padding: 8px 10px; border-radius: var(--border-radius);
+      display: flex; align-items: center; gap: 10px; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.05);
     }
     .item-logo { width: 36px; height: 36px; border-radius: 6px; background: #0f172a; object-fit: contain; }
     .item-info { flex: 1; }
@@ -185,13 +102,8 @@
 
   <header>
     <button class="back-btn" id="backBtn" onclick="goBack()">← Back</button>
-    <div class="header-title" id="headerTitle">Xtream Player</div>
+    <div class="header-title" id="headerTitle">M3U Playlist Player</div>
     <button class="pip-btn" id="pipBtn" onclick="togglePiP()">PiP</button>
-
-    <div class="top-nav" id="topNav" style="display: none;">
-      <div class="nav-item active" id="navLive" onclick="switchTab('live')">Live</div>
-      <div class="nav-item" id="navSeries" onclick="switchTab('series')">Series</div>
-    </div>
   </header>
 
   <div class="video-container" id="videoWrapper">
@@ -200,27 +112,21 @@
 
   <div class="content" id="mainContent">
     <div class="login-card" id="loginCard">
-      <h3>Xtream Codes Login</h3>
-      <input type="text" id="hostUrl" class="input-field" placeholder="Server URL (e.g. http://line.z3dream.top)">
-      <input type="text" id="username" class="input-field" placeholder="Username">
-      <input type="password" id="password" class="input-field" placeholder="Password">
-      <button class="login-btn" onclick="handleLogin()">Connect</button>
+      <h3>M3U Playlist Login</h3>
+      <input type="text" id="m3uUrl" class="input-field" placeholder="Paste M3U / M3U8 URL here...">
+      <button class="login-btn" onclick="loadM3UPlaylist()">Load Playlist</button>
     </div>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search shows or channels..." oninput="globalSearch()">
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search channels..." oninput="filterChannels()">
     <div class="category-grid" id="categoryView" style="display: none;"></div>
     <div class="item-list" id="itemView" style="display: none;"></div>
   </div>
 
   <script>
-    let activeAuth = null;
-    let currentMode = 'live';
+    let categories = {};
+    let allItems = [];
     let navigationStack = [];
     let hlsInstance = null;
-
-    let liveCategories = {}, liveChannels = {}, allLiveFlat = [];
-    let seriesCategories = {}; // Stores category ID -> Name mapping
-    let seriesCache = {};     // Lazy load cache for category content
 
     const loginCard = document.getElementById('loginCard');
     const categoryView = document.getElementById('categoryView');
@@ -228,181 +134,115 @@
     const headerTitle = document.getElementById('headerTitle');
     const backBtn = document.getElementById('backBtn');
     const pipBtn = document.getElementById('pipBtn');
-    const topNav = document.getElementById('topNav');
     const videoWrapper = document.getElementById('videoWrapper');
     const player = document.getElementById('player');
     const searchInput = document.getElementById('searchInput');
 
-    async function handleLogin() {
-      let host = document.getElementById('hostUrl').value.trim();
-      const user = document.getElementById('username').value.trim();
-      const pass = document.getElementById('password').value.trim();
+    async function loadM3UPlaylist() {
+      const url = document.getElementById('m3uUrl').value.trim();
+      if (!url) return alert('Please enter a valid M3U playlist URL.');
 
-      if (!host || !user || !pass) return alert('Please fill in all fields.');
-
-      if (!host.startsWith('http://') && !host.startsWith('https://')) host = 'http://' + host;
-      if (host.endsWith('/')) host = host.slice(0, -1);
-
-      activeAuth = { host, user, pass };
-      loginCard.style.display = 'none';
-      topNav.style.display = 'flex';
-      loadLiveData();
-    }
-
-    async function loadLiveData() {
-      headerTitle.innerText = "Loading Live TV...";
-      const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_live_categories`;
-      const chanUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_live_streams`;
-
+      headerTitle.innerText = "Downloading Playlist...";
+      
       try {
-        const catRes = await fetch(catUrl);
-        const chanRes = await fetch(chanUrl);
-        const categories = await catRes.json();
-        const channels = await chanRes.json();
-
-        processData(categories, channels, liveCategories, liveChannels, 'stream_id');
-        allLiveFlat = Array.isArray(channels) ? channels : Object.values(channels || {});
+        // Note: CORS restrictions in standard browsers might require a CORS proxy if the IPTV provider doesn't allow cross-origin requests.
+        const response = await fetch(url);
+        const text = await response.text();
+        
+        parseM3U(text);
+        loginCard.style.display = 'none';
+        searchInput.style.display = 'block';
         renderCategories();
       } catch (err) {
-        alert("Failed to load Live TV data.");
+        alert("Failed to load M3U file. Ensure the URL is correct or check for browser CORS restrictions.");
+        headerTitle.innerText = "M3U Playlist Player";
       }
     }
 
-    function processData(categories, items, catMap, groupMap, idKey) {
-      Object.keys(catMap).forEach(k => delete catMap[k]);
-      Object.keys(groupMap).forEach(k => delete groupMap[k]);
+    function parseM3U(data) {
+      categories = {};
+      allItems = [];
 
-      const catArr = Array.isArray(categories) ? categories : Object.values(categories || {});
-      const itemArr = Array.isArray(items) ? items : Object.values(items || {});
+      const lines = data.split('\n');
+      let currentItem = null;
 
-      catArr.forEach(c => {
-        if (c && c.category_id) {
-          catMap[c.category_id] = c.category_name;
-          groupMap[c.category_name] = [];
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].trim();
+        if (line.startsWith('#EXTINF:')) {
+          currentItem = { name: '', logo: '', group: 'General', url: '' };
+
+          // Extract Group Name
+          let groupMatch = line.match(/group-title="([^"]+)"/i);
+          if (groupMatch) currentItem.group = groupMatch[1];
+
+          // Extract Logo
+          let logoMatch = line.match(/tvg-logo="([^"]+)"/i);
+          if (logoMatch) currentItem.logo = logoMatch[1];
+
+          // Extract Title (everything after the last comma)
+          let commaIndex = line.lastIndexOf(',');
+          if (commaIndex !== -1) {
+            currentItem.name = line.substring(commaIndex + 1).trim();
+          }
+        } else if (line && !line.startsWith('#') && currentItem) {
+          currentItem.url = line;
+          
+          if (!categories[currentItem.group]) {
+            categories[currentItem.group] = [];
+          }
+          categories[currentItem.group].push(currentItem);
+          allItems.push(currentItem);
+
+          currentItem = null;
         }
-      });
-
-      itemArr.forEach(i => {
-        if (i && i[idKey]) {
-          const cName = catMap[i.category_id] || "UNCATEGORIZED";
-          if (!groupMap[cName]) groupMap[cName] = [];
-          groupMap[cName].push(i);
-        }
-      });
+      }
     }
 
-    function switchTab(mode) {
-      if (!activeAuth) return;
-      currentMode = mode;
-      navigationStack = [];
-      backBtn.style.display = 'none';
-      searchInput.style.display = 'block';
-      searchInput.value = '';
-
-      document.getElementById('navLive').classList.toggle('active', mode === 'live');
-      document.getElementById('navSeries').classList.toggle('active', mode === 'series');
-
-      renderCategories();
-    }
-
-    async function renderCategories() {
+    function renderCategories() {
       categoryView.innerHTML = '';
       categoryView.style.display = 'grid';
       itemView.style.display = 'none';
-      searchInput.style.display = 'block';
       searchInput.value = '';
+      headerTitle.innerText = "Playlist Categories";
 
-      if (currentMode === 'live') {
-        headerTitle.innerText = "Live TV Categories";
-        Object.keys(liveChannels).forEach(catName => {
-          if (!liveChannels[catName].length) return;
-          appendCategoryCard(catName, () => showLiveCategoryItems(catName));
-        });
-      } else {
-        headerTitle.innerText = "Series Categories";
-        if (Object.keys(seriesCategories).length === 0) {
-          await loadSeriesCategories();
-        } else {
-          displaySeriesCategories();
-        }
-      }
-    }
-
-    async function loadSeriesCategories() {
-      headerTitle.innerText = "Loading Series Categories...";
-      const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
-
-      try {
-        const res = await fetch(catUrl);
-        const categories = await res.json();
-        const catArr = Array.isArray(categories) ? categories : Object.values(categories || {});
-        
-        catArr.forEach(c => {
-          if (c && c.category_id) {
-            seriesCategories[c.category_id] = c.category_name;
-          }
-        });
-        displaySeriesCategories();
-      } catch (err) {
-        alert("Failed to load series categories.");
-      }
-    }
-
-    function displaySeriesCategories() {
-      headerTitle.innerText = "Series Categories";
-      categoryView.innerHTML = '';
-      Object.entries(seriesCategories).forEach(([catId, catName]) => {
-        appendCategoryCard(catName, () => loadSeriesByCategory(catId, catName));
+      Object.keys(categories).forEach(groupName => {
+        if (!categories[groupName].length) return;
+        const card = document.createElement('div');
+        card.className = 'category-card';
+        card.innerText = groupName;
+        card.onclick = () => showCategoryItems(groupName);
+        categoryView.appendChild(card);
       });
     }
 
-    function appendCategoryCard(name, onClickFn) {
-      const card = document.createElement('div');
-      card.className = 'category-card';
-      card.innerText = name;
-      card.onclick = onClickFn;
-      categoryView.appendChild(card);
-    }
-
-    async function loadSeriesByCategory(catId, catName) {
+    function showCategoryItems(groupName) {
       pushNavState(() => renderCategories());
       categoryView.style.display = 'none';
       itemView.style.display = 'flex';
-      
-      if (seriesCache[catId]) {
-        headerTitle.innerText = catName;
-        renderItemList(seriesCache[catId]);
-        return;
-      }
+      headerTitle.innerText = groupName;
+      renderItemList(categories[groupName] || []);
+    }
 
-      headerTitle.innerText = `Loading ${catName}...`;
-      itemView.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-sub);">Fetching shows...</div>';
-
-      const url = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series&category_id=${catId}`;
-
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const items = Array.isArray(data) ? data : Object.values(data || {});
-        seriesCache[catId] = items;
+    function renderItemList(items) {
+      itemView.innerHTML = '';
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'item-card';
+        const logo = item.logo || 'https://via.placeholder.com/36?text=TV';
         
-        headerTitle.innerText = catName;
-        renderItemList(items);
-      } catch (err) {
-        alert("Failed to load series for this category.");
-        goBack();
-      }
+        card.innerHTML = `
+          <img class="item-logo" src="${logo}" onerror="this.src='https://via.placeholder.com/36?text=TV'">
+          <div class="item-info">
+            <div class="item-title">${item.name}</div>
+            <div class="item-sub">${item.group}</div>
+          </div>
+        `;
+        card.onclick = () => playStream(item.url);
+        itemView.appendChild(card);
+      });
     }
 
-    function showLiveCategoryItems(catName) {
-      pushNavState(() => renderCategories());
-      categoryView.style.display = 'none';
-      itemView.style.display = 'flex';
-      headerTitle.innerText = catName;
-      renderItemList(liveChannels[catName] || []);
-    }
-
-    function globalSearch() {
+    function filterChannels() {
       const query = searchInput.value.toLowerCase().trim();
       if (!query) {
         if (navigationStack.length === 0) renderCategories();
@@ -413,80 +253,8 @@
       itemView.style.display = 'flex';
       headerTitle.innerText = `Search: "${query}"`;
 
-      if (currentMode === 'live') {
-        const matched = allLiveFlat.filter(i => i.name && i.name.toLowerCase().includes(query)).slice(0, 50);
-        renderItemList(matched);
-      } else {
-        // Search across cached series categories or give notification
-        itemView.innerHTML = '<div style="text-align:center; padding: 20px; color:var(--text-sub);">Global search for series requires full payload. Browse by category for fast loading.</div>';
-      }
-    }
-
-    function renderItemList(items) {
-      itemView.innerHTML = '';
-      items.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'item-card';
-        const logo = item.stream_icon || item.cover || 'https://via.placeholder.com/36?text=TV';
-        
-        card.innerHTML = `
-          <img class="item-logo" src="${logo}" onerror="this.src='https://via.placeholder.com/36?text=TV'">
-          <div class="item-info">
-            <div class="item-title">${item.name}</div>
-            <div class="item-sub">${currentMode === 'live' ? 'Live Stream' : 'TV Show'}</div>
-          </div>
-        `;
-
-        if (currentMode === 'live') {
-          card.onclick = () => playStream(`${activeAuth.host}/live/${activeAuth.user}/${activeAuth.pass}/${item.stream_id}.${item.container_extension || 'm3u8'}`);
-        } else {
-          card.onclick = () => loadSeriesEpisodes(item.series_id, item.name);
-        }
-        itemView.appendChild(card);
-      });
-    }
-
-    async function loadSeriesEpisodes(seriesId, seriesName) {
-      pushNavState(() => {
-        itemView.style.display = 'flex';
-        headerTitle.innerText = seriesName;
-      });
-      headerTitle.innerText = "Loading Episodes...";
-      itemView.innerHTML = '';
-
-      const url = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_info&series_id=${seriesId}`;
-
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        renderEpisodes(data.episodes || {}, seriesName);
-      } catch (err) {
-        alert("Failed to fetch episodes.");
-      }
-    }
-
-    function renderEpisodes(seasons, seriesName) {
-      headerTitle.innerText = seriesName;
-      itemView.innerHTML = '';
-
-      Object.keys(seasons).forEach(seasonNum => {
-        seasons[seasonNum].forEach(ep => {
-          const card = document.createElement('div');
-          card.className = 'item-card';
-          card.innerHTML = `
-            <div class="item-info">
-              <div class="item-title">S${seasonNum} E${ep.episode_num} - ${ep.title || 'Episode ' + ep.episode_num}</div>
-              <div class="item-sub">Play Episode</div>
-            </div>
-          `;
-
-          const epExt = ep.container_extension || 'mp4';
-          const epUrl = `${activeAuth.host}/series/${activeAuth.user}/${activeAuth.pass}/${ep.id}.${epExt}`;
-          card.onclick = () => playStream(epUrl);
-
-          itemView.appendChild(card);
-        });
-      });
+      const matched = allItems.filter(i => i.name && i.name.toLowerCase().includes(query)).slice(0, 50);
+      renderItemList(matched);
     }
 
     function playStream(url) {
@@ -500,7 +268,7 @@
         hlsInstance = null;
       }
 
-      if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('/live/') || !player.canPlayType('video/mp4'))) {
+      if (Hls.isSupported() && (url.includes('.m3u8') || !player.canPlayType('video/mp4'))) {
         hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
@@ -508,21 +276,7 @@
       } else {
         player.src = url;
         player.load();
-        
-        const handleStall = () => {
-          if (player.paused && player.readyState < 3) {
-            player.play().catch(() => {});
-          }
-        };
-        
-        player.removeEventListener('stalled', handleStall);
-        player.removeEventListener('waiting', handleStall);
-        player.addEventListener('stalled', handleStall);
-        player.addEventListener('waiting', handleStall);
-
-        player.play().catch(e => {
-          console.warn('Standard play failed:', e);
-        });
+        player.play().catch(e => console.warn('Playback failed:', e));
       }
 
       videoWrapper.scrollIntoView({ behavior: 'smooth' });
