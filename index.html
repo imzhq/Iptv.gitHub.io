@@ -263,9 +263,6 @@
         processData(categories, channels, liveCategories, liveChannels, 'stream_id');
         allLiveFlat = Array.isArray(channels) ? channels : Object.values(channels || {});
         renderCategories();
-        
-        // Background prefetch routine to keep things smooth without freezing video playback
-        setTimeout(backgroundBackgroundPrefetch, 2000);
       } catch (err) {
         alert("Failed to load Live TV data.");
       }
@@ -292,24 +289,6 @@
           groupMap[cName].push(i);
         }
       });
-    }
-
-    // Non-blocking background loader running asynchronously while content plays
-    async function backgroundBackgroundPrefetch() {
-      if (!activeAuth) return;
-      try {
-        const catUrl = `${activeAuth.host}/player_api.php?username=${activeAuth.user}&password=${activeAuth.pass}&action=get_series_categories`;
-        const res = await fetch(catUrl);
-        const categories = await res.json();
-        const catArr = Array.isArray(categories) ? categories : Object.values(categories || {});
-        catArr.forEach(c => {
-          if (c && c.category_id) {
-            seriesCategories[c.category_id] = c.category_name;
-          }
-        });
-      } catch (e) {
-        // Silent catch for background tasks
-      }
     }
 
     function switchTab(mode) {
@@ -536,26 +515,17 @@
         hlsInstance = null;
       }
 
-      if (Hls.isSupported() && (url.includes('.m3u8') || url.includes('/live/') || !player.canPlayType('video/mp4'))) {
+      // Force HLS.js for .m3u8 or live links if supported, otherwise use standard video element loading for mp4/mkv files
+      if (Hls.isSupported() && url.includes('.m3u8')) {
         hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: true });
         hlsInstance.loadSource(url);
         hlsInstance.attachMedia(player);
-        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+          player.play().catch(e => console.log("Autoplay blocked/failed:", e));
+        });
       } else {
         player.src = url;
         player.load();
-        
-        const handleStall = () => {
-          if (player.paused && player.readyState < 3) {
-            player.play().catch(() => {});
-          }
-        };
-        
-        player.removeEventListener('stalled', handleStall);
-        player.removeEventListener('waiting', handleStall);
-        player.addEventListener('stalled', handleStall);
-        player.addEventListener('waiting', handleStall);
-
         player.play().catch(e => {
           console.warn('Standard play failed:', e);
         });
