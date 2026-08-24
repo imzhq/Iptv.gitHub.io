@@ -45,7 +45,7 @@
     .action-btn {
       background: #1e293b; border: 1px solid #334155; color: #fff;
       padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: none;
-      text-decoration: none; text-align: center;
+      text-decoration: none; text-align: center; white-space: nowrap;
     }
     .action-btn.external { background: #166534; border-color: #22c55e; }
 
@@ -115,7 +115,7 @@
     <div class="header-title" id="headerTitle">Xtream Player</div>
     
     <div class="header-actions">
-      <a id="externalBtn" class="action-btn external" href="#" target="_blank">📺 Open in VLC</a>
+      <button class="action-btn external" id="externalBtn" onclick="copyStreamUrl()">📋 Copy Link for VLC</button>
       <button class="action-btn" id="pipBtn" onclick="togglePiP()">PiP</button>
     </div>
 
@@ -148,6 +148,7 @@
     let currentMode = 'live';
     let navigationStack = [];
     let hlsInstance = null;
+    let currentStreamUrl = '';
 
     let liveCategories = {}, liveChannels = {};
     let seriesCategories = {}, seriesCache = {};
@@ -429,11 +430,9 @@
     }
 
     function playStream(url) {
+      currentStreamUrl = url;
       videoWrapper.style.display = 'block';
-      
-      // Setup external player button for 100% format coverage (VLC/Infuse/etc.)
       externalBtn.style.display = 'block';
-      externalBtn.href = url;
 
       if (document.pictureInPictureEnabled || player.webkitSupportsPresentationMode) {
         pipBtn.style.display = 'block';
@@ -453,11 +452,20 @@
         player.src = url;
         player.load();
         player.play().catch(e => {
-          console.warn('Standard play failed, codec may not be supported by browser. Use external player button:', e);
+          console.warn('Standard play failed (MKV or unsupported codec). Click "Copy Link for VLC" to stream it directly.', e);
         });
       }
 
       videoWrapper.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyStreamUrl() {
+      if (!currentStreamUrl) return;
+      navigator.clipboard.writeText(currentStreamUrl).then(() => {
+        alert("Link copied! Open VLC and paste it under 'Open Network Stream'.");
+      }).catch(err => {
+        prompt("Copy this link manually:", currentStreamUrl);
+      });
     }
 
     async function togglePiP() {
