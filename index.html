@@ -93,6 +93,7 @@
       display: none; 
       aspect-ratio: 16 / 9; 
       position: relative;
+      flex-shrink: 0; /* Keeps video frame solid and prevents layout squishing */
     }
     video { width: 100%; height: 100%; display: block; object-fit: contain; }
 
@@ -481,7 +482,6 @@
         hlsInstance.attachMedia(player);
         hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => player.play().catch(e => console.log(e)));
         
-        // Auto recover from stream stalls/network buffers mid-show
         hlsInstance.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
             switch (data.type) {
@@ -498,7 +498,21 @@
           }
         });
       } else {
+        // Native VOD handling with automatic anti-stall recovery listener
         player.src = url;
+        player.load();
+        
+        const handleStall = () => {
+          if (player.paused && player.readyState < 3) {
+            player.play().catch(() => {});
+          }
+        };
+        
+        player.removeEventListener('stalled', handleStall);
+        player.removeEventListener('waiting', handleStall);
+        player.addEventListener('stalled', handleStall);
+        player.addEventListener('waiting', handleStall);
+
         player.play().catch(e => {
           console.warn('Standard play failed:', e);
         });
